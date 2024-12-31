@@ -1,12 +1,17 @@
-streamlit==1.25.0         # For building the web app
+streamlit       # For building the web app
 tensorflow==2.18.0         # For model training and prediction
 numpy>=1.26.0,<2.1.0             # For numerical operations
 matplotlib==3.8.0         # For plotting training results
-pillow>=7.1.0,<10            # For image processing
-pymupdf==1.21.1           # For extracting images from PDFs
-python-pptx==0.6.21       # For extracting images from PowerPoint
-python-docx==0.8.11       # For extracting images from Word documents
+pillow            # For image processing
+pymupdf           # For extracting images from PDFs
+python-pptx       # For extracting images from PowerPoint
+python-docx      # For extracting images from Word documents
 pdfplumber==0.9.0         # Alternative for handling PDFs (optional)
 opencv-python==4.8.0.74   # For additional image processing (if needed)
-scikit-learn==1.3.0       # For any additional ML utilities
+scikit-learn       # For any additional ML utilities
 gdown
+
+
+
+
+
