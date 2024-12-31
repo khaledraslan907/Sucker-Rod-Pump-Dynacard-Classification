@@ -1,5 +1,5 @@
 streamlit==1.25.0         # For building the web app
-tensorflow==2.16.0         # For model training and prediction
+tensorflow==2.18.0         # For model training and prediction
 numpy==1.24.4             # For numerical operations
 matplotlib==3.8.0         # For plotting training results
 pillow>=7.1.0,<10            # For image processing
