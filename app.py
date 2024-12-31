@@ -7,12 +7,23 @@ import fitz  # For PDF handling (PyMuPDF)
 from pptx import Presentation
 import docx
 import io
+import gdown
 
-# === Load the Pre-trained Model ===
+# === Load the Pre-trained Model from Google Drive ===
+MODEL_URL = "https://drive.google.com/file/d/1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW/view?usp=drive_link"  # Replace with your model file ID from Google Drive
 MODEL_PATH = "sucker_rod_pump_model.h5"
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
-model = tf.keras.models.load_model(MODEL_PATH)
+
+# Download the model if not already downloaded
+try:
+    model = tf.keras.models.load_model(MODEL_PATH)
+    st.write("Model loaded from local storage.")
+except:
+    st.write("Downloading model from Google Drive...")
+    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+    model = tf.keras.models.load_model(MODEL_PATH)
+    st.write("Model downloaded and loaded.")
 
 # === Class Labels and Solutions ===
 class_indices = {
