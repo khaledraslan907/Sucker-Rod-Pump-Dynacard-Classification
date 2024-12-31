@@ -9,6 +9,7 @@ import docx
 import io
 import gdown
 import os
+import requests
 
 # === Load the Pre-trained Model from Google Drive ===
 MODEL_URL = "https://drive.google.com/uc?id=1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW"  # Direct download link
@@ -16,23 +17,40 @@ MODEL_PATH = "sucker_rod_pump_model.h5"
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
 
+# Function to download the model from Google Drive
+def download_model(MODEL_URL, MODEL_PATH):
+    try:
+        response = requests.get(MODEL_URL)
+        if response.status_code == 200:
+            with open(MODEL_PATH, 'wb') as f:
+                f.write(response.content)
+            return True
+        else:
+            st.error(f"Failed to download model. HTTP status code: {response.status_code}")
+            return False
+    except Exception as e:
+        st.error(f"Error during model download: {e}")
+        return False
+
 # Download the model if not already downloaded
 if not os.path.exists(MODEL_PATH):
-    try:
-        st.write("Downloading model from Google Drive...")
-        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-        st.write("Download complete.")
-    except Exception as e:
-        st.error(f"Failed to download the model. Error: {e}")
+    st.write("Downloading model from Google Drive...")
+    if not download_model(MODEL_URL, MODEL_PATH):
         st.stop()
 
-# Verify the model file
+# Verify the model file and load it
 if os.path.exists(MODEL_PATH):
     try:
         model = tf.keras.models.load_model(MODEL_PATH)
         st.write("Model loaded successfully.")
+    except OSError as e:
+        st.error(f"Failed to load model due to file system error: {e}")
+        st.stop()
+    except ValueError as e:
+        st.error(f"Model file format error: {e}")
+        st.stop()
     except Exception as e:
-        st.error(f"Failed to load the model. Ensure the file is a valid TensorFlow/Keras .h5 model. Error: {e}")
+        st.error(f"An unknown error occurred: {e}")
         st.stop()
 else:
     st.error("Model file does not exist. Ensure it is downloaded correctly.")
