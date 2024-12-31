@@ -1,6 +1,6 @@
 streamlit==1.25.0         # For building the web app
 tensorflow==2.18.0         # For model training and prediction
-numpy==1.24.4             # For numerical operations
+numpy>=1.26.0,<2.1.0             # For numerical operations
 matplotlib==3.8.0         # For plotting training results
 pillow>=7.1.0,<10            # For image processing
 pymupdf==1.21.1           # For extracting images from PDFs
