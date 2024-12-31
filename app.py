@@ -11,7 +11,7 @@ import gdown
 import os
 
 # === Load the Pre-trained Model from Google Drive ===
-MODEL_URL = "https://drive.google.com/file/d/1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW/view?usp=sharing"  # Updated for direct download
+MODEL_URL = "https://drive.google.com/uc?id=1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW"  # Updated for direct download
 MODEL_PATH = "sucker_rod_pump_model.h5"
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
