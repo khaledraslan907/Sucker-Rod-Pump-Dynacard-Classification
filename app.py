@@ -60,18 +60,31 @@ def is_valid_model(file_path):
         return False
 
 # === Load the Pre-trained Model ===
-if not os.path.exists(MODEL_PATH):
-    st.write("Downloading model from Google Drive...")
-    if not download_model_from_google_drive(MODEL_URL, MODEL_PATH):
-        st.stop()
+def load_model():
+    # If the model doesn't exist, download it
+    if not os.path.exists(MODEL_PATH):
+        st.write("Downloading model from Google Drive...")
+        if not download_model_from_google_drive(MODEL_URL, MODEL_PATH):
+            st.stop()
 
-# Verify the model file before loading
-if os.path.exists(MODEL_PATH) and is_valid_model(MODEL_PATH):
-    st.write("Model loaded successfully.")
-    model = tf.keras.models.load_model(MODEL_PATH)
-else:
-    st.error("Model file does not exist or is corrupted.")
-    st.stop()
+    # Check if the model file exists and is valid
+    if os.path.exists(MODEL_PATH):
+        # Check file size to confirm it's a valid model file
+        file_size = os.path.getsize(MODEL_PATH)
+        if file_size < 1 * 1024 * 1024:  # Check if the model is too small (<1MB, likely corrupted)
+            st.error("Downloaded model is too small. The file may be corrupted.")
+            st.stop()
+        
+        # Verify model validity by trying to load it
+        if is_valid_model(MODEL_PATH):
+            st.write("Model loaded successfully.")
+            return tf.keras.models.load_model(MODEL_PATH)
+        else:
+            st.error("Model is corrupted or in an invalid format.")
+            st.stop()
+    else:
+        st.error("Model file does not exist.")
+        st.stop()
 
 # === Image Preprocessing Function ===
 def preprocess_image(img):
@@ -89,6 +102,9 @@ def classify_image(img):
 
 # === Streamlit App ===
 st.title("Sucker Rod Pump Dynacard Classification")
+
+# Load the model
+model = load_model()
 
 uploaded_file = st.file_uploader("Upload an image, PDF, PowerPoint, or Word document", type=["jpg", "png", "pdf", "pptx", "docx"])
 
