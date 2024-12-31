@@ -1,70 +1,17 @@
-import streamlit as st
+import os
 import tensorflow as tf
-from tensorflow.keras.preprocessing import image
+import gdown
+import streamlit as st
 import numpy as np
 from PIL import Image
-import fitz  # For PDF handling (PyMuPDF)
-from pptx import Presentation
-import docx
-import io
-import gdown
-import os
-import requests
 
-# === Load the Pre-trained Model from Google Drive ===
-MODEL_URL = "https://drive.google.com/uc?id=1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW"  # Direct download link
+# === Constants ===
+MODEL_URL = "https://drive.google.com/uc?id=1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW"  # Google Drive direct download link
 MODEL_PATH = "sucker_rod_pump_model.h5"
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
 
-# Function to download the model from Google Drive
-def download_model(MODEL_URL, MODEL_PATH):
-    try:
-        response = requests.get(MODEL_URL, stream=True)
-        if response.status_code == 200:
-            with open(MODEL_PATH, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            return True
-        else:
-            st.error(f"Failed to download model. HTTP status code: {response.status_code}")
-            return False
-    except Exception as e:
-        st.error(f"Error during model download: {e}")
-        return False
-
-# Function to check if the model file is valid
-def is_model_valid(file_path):
-    model_size = os.path.getsize(file_path)
-    # Ensure model size is greater than a threshold (e.g., 20MB)
-    return model_size > 20 * 1024 * 1024  # 20 MB threshold
-
-# Check if the model file exists or needs to be downloaded
-if not os.path.exists(MODEL_PATH) or not is_model_valid(MODEL_PATH):
-    st.write("Downloading model from Google Drive...")
-    if not download_model(MODEL_URL, MODEL_PATH):
-        st.stop()
-
-# Verify the model file and load it
-if os.path.exists(MODEL_PATH):
-    try:
-        model = tf.keras.models.load_model(MODEL_PATH)
-        st.write("Model loaded successfully.")
-    except OSError as e:
-        st.error(f"Failed to load model due to file system error: {e}")
-        st.stop()
-    except ValueError as e:
-        st.error(f"Model file format error: {e}")
-        st.stop()
-    except Exception as e:
-        st.error(f"An unknown error occurred: {e}")
-        st.stop()
-else:
-    st.error("Model file does not exist. Ensure it is downloaded correctly.")
-    st.stop()
-
-# === Class Labels and Solutions ===
+# === Class Labels ===
 class_indices = {
     0: "Ideal Card",
     1: "Gas Interference",
@@ -79,6 +26,7 @@ class_indices = {
     10: "Worn Standing Valve"
 }
 
+# === Solutions (for specific classes) ===
 solutions = {
     "Gas Interference": """**Causes**: 
     - Incomplete pump filling, reduced fluid load, and abnormal pump behavior.
@@ -88,57 +36,48 @@ solutions = {
     - Maintain Backpressure: Use surface backpressure valves.
     - Use Chemical Treatments: Inject foam breakers or surfactants to minimize gas impact.
     - Adjust Well Configuration: Use tubing anchors and optimize perforation placement.
-    - Long-Term Fixes: Install ESPs or gas lift systems.""",
-    # Other solutions omitted for brevity...
+    - Long-Term Fixes: Install ESPs or gas lift systems."""
+    # Add solutions for other categories here if needed
 }
+
+# === Download the Model from Google Drive ===
+def download_model_from_google_drive(MODEL_URL, MODEL_PATH):
+    try:
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        return True
+    except Exception as e:
+        st.error(f"Failed to download model. Error: {e}")
+        return False
+
+# === Verify the Model File is Valid ===
+def is_valid_model(file_path):
+    try:
+        # Try loading the model to see if it's valid
+        model = tf.keras.models.load_model(file_path)
+        return True
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return False
+
+# === Load the Pre-trained Model ===
+if not os.path.exists(MODEL_PATH):
+    st.write("Downloading model from Google Drive...")
+    if not download_model_from_google_drive(MODEL_URL, MODEL_PATH):
+        st.stop()
+
+# Verify the model file before loading
+if os.path.exists(MODEL_PATH) and is_valid_model(MODEL_PATH):
+    st.write("Model loaded successfully.")
+    model = tf.keras.models.load_model(MODEL_PATH)
+else:
+    st.error("Model file does not exist or is corrupted.")
+    st.stop()
 
 # === Image Preprocessing Function ===
 def preprocess_image(img):
     img = img.resize((IMG_HEIGHT, IMG_WIDTH))
     img_array = np.expand_dims(np.array(img) / 255.0, axis=0)
     return img_array
-
-# === Extract Images from Documents ===
-def extract_images_from_pdf(pdf_file):
-    try:
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        images = []
-        for page in doc:
-            for img in page.get_images(full=True):
-                xref = img[0]
-                base_image = doc.extract_image(xref)
-                images.append(Image.open(io.BytesIO(base_image["image"])))
-        return images
-    except Exception as e:
-        st.error(f"Failed to extract images from PDF. Error: {e}")
-        return []
-
-def extract_images_from_pptx(pptx_file):
-    try:
-        prs = Presentation(io.BytesIO(pptx_file.read()))
-        images = []
-        for slide in prs.slides:
-            for shape in slide.shapes:
-                if shape.shape_type == 13:  # Type 13 is Picture
-                    image_stream = shape.image.blob
-                    images.append(Image.open(io.BytesIO(image_stream)))
-        return images
-    except Exception as e:
-        st.error(f"Failed to extract images from PowerPoint. Error: {e}")
-        return []
-
-def extract_images_from_docx(docx_file):
-    try:
-        doc = docx.Document(io.BytesIO(docx_file.read()))
-        images = []
-        for rel in doc.part.rels.values():
-            if "image" in rel.target_ref:
-                img = doc.part.related_parts[rel.target_ref]
-                images.append(Image.open(io.BytesIO(img.blob)))
-        return images
-    except Exception as e:
-        st.error(f"Failed to extract images from Word document. Error: {e}")
-        return []
 
 # === Classification Function ===
 def classify_image(img):
@@ -154,15 +93,52 @@ st.title("Sucker Rod Pump Dynacard Classification")
 uploaded_file = st.file_uploader("Upload an image, PDF, PowerPoint, or Word document", type=["jpg", "png", "pdf", "pptx", "docx"])
 
 if uploaded_file:
+    extracted_images = []
+
+    # Process PDF file and extract images
     if uploaded_file.name.endswith(".pdf"):
-        extracted_images = extract_images_from_pdf(uploaded_file)
+        from PyPDF2 import PdfReader
+        import fitz  # PyMuPDF
+        try:
+            doc = fitz.open(uploaded_file)
+            for page in doc:
+                for img in page.get_images(full=True):
+                    xref = img[0]
+                    base_image = doc.extract_image(xref)
+                    extracted_images.append(Image.open(io.BytesIO(base_image["image"])))
+        except Exception as e:
+            st.error(f"Error extracting images from PDF: {e}")
+    
+    # Process PowerPoint file and extract images
     elif uploaded_file.name.endswith(".pptx"):
-        extracted_images = extract_images_from_pptx(uploaded_file)
+        from pptx import Presentation
+        try:
+            prs = Presentation(uploaded_file)
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if shape.shape_type == 13:  # Type 13 is Picture
+                        image_stream = shape.image.blob
+                        extracted_images.append(Image.open(io.BytesIO(image_stream)))
+        except Exception as e:
+            st.error(f"Error extracting images from PowerPoint: {e}")
+
+    # Process Word file and extract images
     elif uploaded_file.name.endswith(".docx"):
-        extracted_images = extract_images_from_docx(uploaded_file)
+        import docx
+        try:
+            doc = docx.Document(uploaded_file)
+            for rel in doc.part.rels.values():
+                if "image" in rel.target_ref:
+                    img = doc.part.related_parts[rel.target_ref]
+                    extracted_images.append(Image.open(io.BytesIO(img.blob)))
+        except Exception as e:
+            st.error(f"Error extracting images from Word: {e}")
+
+    # If it's an image file, process directly
     else:
         extracted_images = [Image.open(uploaded_file)]
 
+    # Process and classify the images
     if extracted_images:
         for img in extracted_images:
             st.image(img, caption="Uploaded Image", use_column_width=True)
