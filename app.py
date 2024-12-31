@@ -32,8 +32,14 @@ def download_model(MODEL_URL, MODEL_PATH):
         st.error(f"Error during model download: {e}")
         return False
 
-# Download the model if not already downloaded
-if not os.path.exists(MODEL_PATH):
+# Function to check if the model file is valid
+def is_model_valid(file_path):
+    model_size = os.path.getsize(file_path)
+    # Ensure model size is greater than a threshold (e.g., 20MB)
+    return model_size > 20 * 1024 * 1024  # 20 MB threshold
+
+# Check if the model file exists or needs to be downloaded
+if not os.path.exists(MODEL_PATH) or not is_model_valid(MODEL_PATH):
     st.write("Downloading model from Google Drive...")
     if not download_model(MODEL_URL, MODEL_PATH):
         st.stop()
@@ -45,6 +51,12 @@ if os.path.exists(MODEL_PATH):
         st.write("Model loaded successfully.")
     except OSError as e:
         st.error(f"Failed to load model due to file system error: {e}")
+        # Trying SavedModel format (if possible)
+        try:
+            model = tf.saved_model.load(MODEL_PATH)
+            st.write("SavedModel format loaded successfully.")
+        except Exception as e:
+            st.error(f"Error loading SavedModel: {e}")
         st.stop()
     except ValueError as e:
         st.error(f"Model file format error: {e}")
