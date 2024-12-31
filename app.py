@@ -20,10 +20,12 @@ IMG_WIDTH = 224
 # Function to download the model from Google Drive
 def download_model(MODEL_URL, MODEL_PATH):
     try:
-        response = requests.get(MODEL_URL)
+        response = requests.get(MODEL_URL, stream=True)
         if response.status_code == 200:
             with open(MODEL_PATH, 'wb') as f:
-                f.write(response.content)
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
             return True
         else:
             st.error(f"Failed to download model. HTTP status code: {response.status_code}")
@@ -51,12 +53,6 @@ if os.path.exists(MODEL_PATH):
         st.write("Model loaded successfully.")
     except OSError as e:
         st.error(f"Failed to load model due to file system error: {e}")
-        # Trying SavedModel format (if possible)
-        try:
-            model = tf.saved_model.load(MODEL_PATH)
-            st.write("SavedModel format loaded successfully.")
-        except Exception as e:
-            st.error(f"Error loading SavedModel: {e}")
         st.stop()
     except ValueError as e:
         st.error(f"Model file format error: {e}")
