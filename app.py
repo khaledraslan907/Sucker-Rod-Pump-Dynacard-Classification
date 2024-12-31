@@ -11,7 +11,7 @@ import gdown
 import os
 
 # === Load the Pre-trained Model from Google Drive ===
-MODEL_URL = "https://drive.google.com/file/d/1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW/view?usp=sharing"  # Updated for direct download
+MODEL_URL = "https://drive.google.com/uc?id=1hdcOk1OiMDpHgAmH3xRvUtQXOchkekgW"  # Direct download link
 MODEL_PATH = "sucker_rod_pump_model.h5"
 IMG_HEIGHT = 224
 IMG_WIDTH = 224
@@ -21,15 +21,21 @@ if not os.path.exists(MODEL_PATH):
     try:
         st.write("Downloading model from Google Drive...")
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        st.write("Download complete.")
     except Exception as e:
         st.error(f"Failed to download the model. Error: {e}")
         st.stop()
 
-try:
-    model = tf.keras.models.load_model(MODEL_PATH)
-    st.write("Model loaded successfully.")
-except Exception as e:
-    st.error(f"Failed to load the model. Error: {e}")
+# Verify the model file
+if os.path.exists(MODEL_PATH):
+    try:
+        model = tf.keras.models.load_model(MODEL_PATH)
+        st.write("Model loaded successfully.")
+    except Exception as e:
+        st.error(f"Failed to load the model. Ensure the file is a valid TensorFlow/Keras .h5 model. Error: {e}")
+        st.stop()
+else:
+    st.error("Model file does not exist. Ensure it is downloaded correctly.")
     st.stop()
 
 # === Class Labels and Solutions ===
